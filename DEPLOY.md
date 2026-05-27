@@ -8,10 +8,7 @@ Set these in GitHub repository settings: `Settings` -> `Secrets and variables` -
 
 | Secret | Value |
 | --- | --- |
-| `SERVER_HOST` | `101.35.131.94` |
-| `SERVER_USER` | `ubuntu` |
 | `SERVER_PASSWORD` | server SSH password |
-| `DEPLOY_PATH` | `/var/www/travel-admin` |
 | `VITE_API_BASE_URL` | leave empty when Nginx proxies `/api` and `/uploads` |
 
 ## What the workflow does
