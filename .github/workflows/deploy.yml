@@ -115,6 +115,31 @@ jobs:
             echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S ln -sfn /etc/nginx/sites-available/travel-admin /etc/nginx/sites-enabled/travel-admin
             echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S rm -f /etc/nginx/sites-enabled/default
             echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S nginx -t
+
+            if echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S ss -ltnp 'sport = :80' | grep -q LISTEN; then
+              echo "port 80 is occupied. Stopping existing service before deploying travel-admin."
+
+              if command -v docker >/dev/null 2>&1; then
+                CONTAINERS=$(echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S docker ps --format '{{.ID}} {{.Ports}}' | awk '/:80->|:::80->|0\.0\.0\.0:80->/ {print $1}')
+                if [ -n "$CONTAINERS" ]; then
+                  echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S docker stop $CONTAINERS
+                fi
+              fi
+
+              for service in apache2 httpd caddy; do
+                if systemctl list-unit-files "$service.service" >/dev/null 2>&1; then
+                  echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S systemctl stop "$service" || true
+                  echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S systemctl disable "$service" || true
+                fi
+              done
+
+              PIDS=$(echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S ss -ltnp 'sport = :80' | sed -n 's/.*pid=\([0-9][0-9]*\).*/\1/p' | sort -u)
+              if [ -n "$PIDS" ]; then
+                echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S kill $PIDS || true
+                sleep 2
+              fi
+            fi
+
             echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S systemctl enable nginx
             if ! echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S systemctl restart nginx; then
               echo "nginx restart failed. Service status:"
