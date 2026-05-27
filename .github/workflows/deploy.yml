@@ -116,4 +116,12 @@ jobs:
             echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S rm -f /etc/nginx/sites-enabled/default
             echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S nginx -t
             echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S systemctl enable nginx
-            echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S systemctl restart nginx
+            if ! echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S systemctl restart nginx; then
+              echo "nginx restart failed. Service status:"
+              echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S systemctl status nginx --no-pager || true
+              echo "nginx journal:"
+              echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S journalctl -xeu nginx.service --no-pager -n 80 || true
+              echo "port 80 listeners:"
+              echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S ss -ltnp 'sport = :80' || true
+              exit 1
+            fi
