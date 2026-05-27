@@ -115,4 +115,5 @@ jobs:
             echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S ln -sfn /etc/nginx/sites-available/travel-admin /etc/nginx/sites-enabled/travel-admin
             echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S rm -f /etc/nginx/sites-enabled/default
             echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S nginx -t
-            echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S systemctl reload nginx
+            echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S systemctl enable nginx
+            echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S systemctl restart nginx
