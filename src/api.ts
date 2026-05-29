@@ -1,5 +1,5 @@
 import axios from 'axios'
-import type { HomeBanner, HomeBannerPayload, ProductPayload, TravelProduct } from './types'
+import type { HomeBanner, HomeBannerPayload, OrderStatus, ProductPayload, TravelOrder, TravelProduct } from './types'
 
 const TOKEN_KEY = 'travel_admin_token'
 
@@ -103,6 +103,21 @@ export async function updateHomeBannerStatus(id: string, status: string) {
     status,
   })
   return data.banner as HomeBanner
+}
+
+export async function listOrders(params: {
+  page: number
+  pageSize: number
+  keyword?: string
+  status?: OrderStatus | ''
+}) {
+  const { data } = await api.get('/api/admin/orders', { params })
+  return data as { orderList: TravelOrder[]; total: number }
+}
+
+export async function getOrder(id: string) {
+  const { data } = await api.get(`/api/admin/orders/${id}`)
+  return data.order as TravelOrder
 }
 
 export async function signImageUrls(keys: string[]) {

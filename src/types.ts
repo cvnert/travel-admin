@@ -1,5 +1,6 @@
 export type ProductStatus = 'draft' | 'published' | 'offline'
 export type BannerStatus = 'draft' | 'published' | 'offline'
+export type OrderStatus = 'pending_payment' | 'paid'
 
 export interface AdminUser {
   id: string
@@ -72,4 +73,39 @@ export interface HomeBannerPayload {
   tag: string
   sortOrder: number
   status: BannerStatus
+}
+
+export interface TravelOrderUser {
+  id: string
+  username: string
+  nickname: string
+  avatarUrl: string
+}
+
+export interface TravelOrderItem {
+  id: string
+  orderId: string
+  productId: string
+  productTitle: string
+  productCoverImage: string
+  productCoverImageUrl: string
+  unitPrice: number
+  quantity: number
+  subtotalAmount: number
+}
+
+export interface TravelOrder {
+  id: string
+  orderNo: string
+  userId: string
+  status: OrderStatus
+  paymentStatus: 'unpaid' | 'paid'
+  paymentMethod: string
+  totalAmount: number
+  totalQuantity: number
+  paidAt?: string | null
+  createdAt: string
+  updatedAt: string
+  user: TravelOrderUser
+  items: TravelOrderItem[]
 }

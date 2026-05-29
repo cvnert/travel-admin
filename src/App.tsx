@@ -40,8 +40,10 @@ import type {
   BannerStatus,
   HomeBanner,
   HomeBannerPayload,
+  OrderStatus,
   ProductPayload,
   ProductStatus,
+  TravelOrder,
   TravelProduct,
 } from './types'
 import {
@@ -54,6 +56,7 @@ import {
   getProduct,
   getToken,
   listHomeBanners,
+  listOrders,
   listProducts,
   login,
   setToken,
@@ -99,12 +102,23 @@ function AdminLayout() {
         <Menu
           theme="dark"
           mode="inline"
-          selectedKeys={[location.pathname.startsWith('/banners') ? 'banners' : 'products']}
+          selectedKeys={[
+            location.pathname.startsWith('/banners')
+              ? 'banners'
+              : location.pathname.startsWith('/orders')
+                ? 'orders'
+                : 'products',
+          ]}
           items={[
             {
               key: 'banners',
               icon: <AppstoreOutlined />,
               label: <Link to="/banners">轮播图管理</Link>,
+            },
+            {
+              key: 'orders',
+              icon: <AppstoreOutlined />,
+              label: <Link to="/orders">订单查询</Link>,
             },
             {
               key: 'products',
@@ -334,6 +348,178 @@ function ProductsPage() {
                   )}
                 </Space>
               ),
+            },
+          ]}
+        />
+      </Card>
+    </>
+  )
+}
+
+function OrdersPage() {
+  const [loading, setLoading] = useState(false)
+  const [orders, setOrders] = useState<TravelOrder[]>([])
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  const [keyword, setKeyword] = useState('')
+  const [status, setStatus] = useState<OrderStatus | ''>('')
+
+  async function load(
+    nextPage = page,
+    nextPageSize = pageSize,
+    nextKeyword = keyword,
+    nextStatus = status,
+  ) {
+    setLoading(true)
+    try {
+      const data = await listOrders({
+        page: nextPage,
+        pageSize: nextPageSize,
+        keyword: nextKeyword || undefined,
+        status: nextStatus,
+      })
+      setOrders(data.orderList)
+      setTotal(data.total)
+      setPage(nextPage)
+      setPageSize(nextPageSize)
+    } catch (error: any) {
+      message.error(error.response?.data?.error || '加载订单失败')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    load(1, pageSize)
+  }, [])
+
+  return (
+    <>
+      <div className="page-heading">
+        <h1>订单查询</h1>
+        <p>查看小程序购物车下单、模拟支付和订单归档情况，便于运营排查链路。</p>
+      </div>
+      <Card className="search-card">
+        <Space wrap>
+          <Input.Search
+            allowClear
+            placeholder="按订单号搜索"
+            style={{ width: 280 }}
+            onSearch={(value) => {
+              setKeyword(value)
+              load(1, pageSize, value, status)
+            }}
+          />
+          <Select
+            value={status}
+            style={{ width: 180 }}
+            onChange={(value) => {
+              setStatus(value)
+              load(1, pageSize, keyword, value)
+            }}
+            options={[
+              { label: '全部状态', value: '' },
+              { label: '待付款', value: 'pending_payment' },
+              { label: '已支付', value: 'paid' },
+            ]}
+          />
+        </Space>
+      </Card>
+      <Card className="content-card">
+        <Table<TravelOrder>
+          rowKey="id"
+          loading={loading}
+          dataSource={orders}
+          expandable={{
+            expandedRowRender: (record) => (
+              <Table
+                rowKey="id"
+                size="small"
+                pagination={false}
+                dataSource={record.items}
+                columns={[
+                  {
+                    title: '商品',
+                    dataIndex: 'productTitle',
+                  },
+                  {
+                    title: '数量',
+                    dataIndex: 'quantity',
+                    width: 80,
+                  },
+                  {
+                    title: '单价',
+                    dataIndex: 'unitPrice',
+                    width: 120,
+                    render: (value: number) => `¥${value.toFixed(2)}`,
+                  },
+                  {
+                    title: '小计',
+                    dataIndex: 'subtotalAmount',
+                    width: 120,
+                    render: (value: number) => `¥${value.toFixed(2)}`,
+                  },
+                ]}
+              />
+            ),
+          }}
+          pagination={{
+            current: page,
+            pageSize,
+            total,
+            showSizeChanger: true,
+            showTotal: (value) => `共 ${value} 条`,
+            onChange: (nextPage, nextPageSize) => load(nextPage, nextPageSize, keyword, status),
+          }}
+          columns={[
+            {
+              title: '订单号',
+              dataIndex: 'orderNo',
+              width: 220,
+              render: (value: string) => <Typography.Text code>{value}</Typography.Text>,
+            },
+            {
+              title: '用户',
+              dataIndex: 'user',
+              width: 220,
+              render: (user: TravelOrder['user']) => (
+                <div>
+                  <Typography.Text strong>{user?.nickname || user?.username || '-'}</Typography.Text>
+                  <div>
+                    <Typography.Text type="secondary">{user?.username || '-'}</Typography.Text>
+                  </div>
+                </div>
+              ),
+            },
+            {
+              title: '订单金额',
+              dataIndex: 'totalAmount',
+              width: 140,
+              render: (value: number) => `¥${value.toFixed(2)}`,
+            },
+            {
+              title: '件数',
+              dataIndex: 'totalQuantity',
+              width: 90,
+            },
+            {
+              title: '状态',
+              dataIndex: 'status',
+              width: 120,
+              render: (value: OrderStatus) => <StatusTag status={value} />,
+            },
+            {
+              title: '支付方式',
+              dataIndex: 'paymentMethod',
+              width: 140,
+              render: () => '模拟微信支付',
+            },
+            {
+              title: '创建时间',
+              dataIndex: 'createdAt',
+              width: 190,
+              render: (value: string) => value ? value.replace('T', ' ').slice(0, 19) : '-',
             },
           ]}
         />
@@ -701,11 +887,13 @@ function ProductFormPage() {
   )
 }
 
-function StatusTag({ status }: { status: ProductStatus | BannerStatus }) {
+function StatusTag({ status }: { status: ProductStatus | BannerStatus | OrderStatus }) {
   const map = {
     draft: { color: 'default', text: '草稿' },
     published: { color: 'success', text: '上架' },
     offline: { color: 'warning', text: '下架' },
+    pending_payment: { color: 'processing', text: '待付款' },
+    paid: { color: 'success', text: '已支付' },
   } as const
   const item = map[status] || map.draft
   return <Tag color={item.color}>{item.text}</Tag>
@@ -879,6 +1067,7 @@ function App() {
             <Route path="/banners" element={<BannersPage />} />
             <Route path="/banners/new" element={<BannerFormPage />} />
             <Route path="/banners/:id/edit" element={<BannerFormPage />} />
+            <Route path="/orders" element={<OrdersPage />} />
             <Route path="/products" element={<ProductsPage />} />
             <Route path="/products/new" element={<ProductFormPage />} />
             <Route path="/products/:id/edit" element={<ProductFormPage />} />
