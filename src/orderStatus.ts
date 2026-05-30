@@ -28,6 +28,17 @@ export function getOrderStatusMeta(status: OrderStatus | string) {
   }
 }
 
+export function getPaymentMethodLabel(paymentMethod?: string | null) {
+  switch ((paymentMethod || '').trim()) {
+    case 'wechat_pay':
+      return '微信支付'
+    case 'mock_wechat':
+      return '模拟微信支付'
+    default:
+      return '-'
+  }
+}
+
 export function formatDateTime(value?: string | null) {
   return value ? value.replace('T', ' ').slice(0, 19) : '-'
 }

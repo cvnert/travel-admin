@@ -69,7 +69,7 @@ import {
   uploadImageUrl,
 } from './api'
 import VerificationPage from './VerificationPage'
-import { getOrderStatusMeta } from './orderStatus'
+import { getOrderStatusMeta, getPaymentMethodLabel } from './orderStatus'
 
 const { Header, Sider, Content } = Layout
 
@@ -528,7 +528,7 @@ function OrdersPage() {
               title: '支付方式',
               dataIndex: 'paymentMethod',
               width: 140,
-              render: () => '模拟微信支付',
+              render: (value: string) => getPaymentMethodLabel(value),
             },
             {
               title: '创建时间',
