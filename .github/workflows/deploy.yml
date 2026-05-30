@@ -6,10 +6,19 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
     name: Build and deploy
     runs-on: ubuntu-latest
+    env:
+      DEPLOY_HOST: 182.92.208.159
+      DEPLOY_PORT: '22'
+      DEPLOY_USER: root
+      DEPLOY_PATH: /var/www/travel-admin
+      SERVER_NAME: cvnert.com.cn www.cvnert.com.cn
 
     steps:
       - name: Checkout
@@ -29,63 +38,48 @@ jobs:
         env:
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
 
-      - name: Prepare remote server
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: 101.35.131.94
-          username: ubuntu
-          password: ${{ secrets.SERVER_PASSWORD }}
-          script: |
-            set -e
-            DEPLOY_PATH="/var/www/travel-admin"
-            case "$DEPLOY_PATH" in
-              /var/www/*) ;;
-              *) echo "DEPLOY_PATH must be under /var/www"; exit 1 ;;
-            esac
-
-            if ! command -v nginx >/dev/null 2>&1; then
-              echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S apt-get update
-              echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S apt-get install -y nginx
-            fi
-
-            echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S mkdir -p "$DEPLOY_PATH"
-            echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S chown -R "$USER":"$USER" "$DEPLOY_PATH"
-            rm -rf /tmp/travel-admin-dist
-            mkdir -p /tmp/travel-admin-dist
+      - name: Validate deploy secrets
+        run: |
+          test -n "${{ secrets.SERVER_PASSWORD }}"
 
       - name: Upload dist
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: 101.35.131.94
-          username: ubuntu
+          host: ${{ env.DEPLOY_HOST }}
+          port: ${{ env.DEPLOY_PORT }}
+          username: ${{ env.DEPLOY_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
           source: dist/*
           target: /tmp/travel-admin-dist
+          overwrite: true
 
       - name: Publish and reload Nginx
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1.2.0
         with:
-          host: 101.35.131.94
-          username: ubuntu
+          host: ${{ env.DEPLOY_HOST }}
+          port: ${{ env.DEPLOY_PORT }}
+          username: ${{ env.DEPLOY_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
           script: |
-            set -e
-            DEPLOY_PATH="/var/www/travel-admin"
-            case "$DEPLOY_PATH" in
-              /var/www/*) ;;
-              *) echo "DEPLOY_PATH must be under /var/www"; exit 1 ;;
-            esac
-
-            rm -rf "$DEPLOY_PATH"/*
+            set -euo pipefail
+            DEPLOY_PATH='${{ env.DEPLOY_PATH }}'
+            SERVER_NAME='${{ env.SERVER_NAME }}'
+            mkdir -p "$DEPLOY_PATH"
+            find "$DEPLOY_PATH" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
             cp -R /tmp/travel-admin-dist/dist/. "$DEPLOY_PATH"/
-
-            cat > /tmp/travel-admin-nginx.conf <<EOF
+            cat > /etc/nginx/sites-available/travel-admin <<EOF
             server {
                 listen 80;
-                server_name _;
+                listen 443 ssl;
+                server_name $SERVER_NAME;
 
                 root $DEPLOY_PATH;
                 index index.html;
+
+                ssl_certificate /etc/letsencrypt/live/cvnert.com.cn/fullchain.pem;
+                ssl_certificate_key /etc/letsencrypt/live/cvnert.com.cn/privkey.pem;
+                include /etc/letsencrypt/options-ssl-nginx.conf;
+                ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
                 location /api/ {
                     proxy_pass http://127.0.0.1:8080;
@@ -110,43 +104,7 @@ jobs:
                 }
             }
             EOF
-
-            echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S cp /tmp/travel-admin-nginx.conf /etc/nginx/sites-available/travel-admin
-            echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S ln -sfn /etc/nginx/sites-available/travel-admin /etc/nginx/sites-enabled/travel-admin
-            echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S rm -f /etc/nginx/sites-enabled/default
-            echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S nginx -t
-
-            if echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S ss -ltnp 'sport = :80' | grep -q LISTEN; then
-              echo "port 80 is occupied. Stopping existing service before deploying travel-admin."
-
-              if command -v docker >/dev/null 2>&1; then
-                CONTAINERS=$(echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S docker ps --format '{{.ID}} {{.Ports}}' | awk '/:80->|:::80->|0\.0\.0\.0:80->/ {print $1}')
-                if [ -n "$CONTAINERS" ]; then
-                  echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S docker stop $CONTAINERS
-                fi
-              fi
-
-              for service in apache2 httpd caddy; do
-                if systemctl list-unit-files "$service.service" >/dev/null 2>&1; then
-                  echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S systemctl stop "$service" || true
-                  echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S systemctl disable "$service" || true
-                fi
-              done
-
-              PIDS=$(echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S ss -ltnp 'sport = :80' | sed -n 's/.*pid=\([0-9][0-9]*\).*/\1/p' | sort -u)
-              if [ -n "$PIDS" ]; then
-                echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S kill $PIDS || true
-                sleep 2
-              fi
-            fi
-
-            echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S systemctl enable nginx
-            if ! echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S systemctl restart nginx; then
-              echo "nginx restart failed. Service status:"
-              echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S systemctl status nginx --no-pager || true
-              echo "nginx journal:"
-              echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S journalctl -xeu nginx.service --no-pager -n 80 || true
-              echo "port 80 listeners:"
-              echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S ss -ltnp 'sport = :80' || true
-              exit 1
-            fi
+            ln -sfn /etc/nginx/sites-available/travel-admin /etc/nginx/sites-enabled/travel-admin
+            rm -f /etc/nginx/sites-enabled/default
+            nginx -t
+            systemctl reload nginx

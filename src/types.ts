@@ -1,6 +1,6 @@
 export type ProductStatus = 'draft' | 'published' | 'offline'
 export type BannerStatus = 'draft' | 'published' | 'offline'
-export type OrderStatus = 'pending_payment' | 'paid'
+export type OrderStatus = 'pending_payment' | 'pending_travel' | 'completed' | 'paid'
 
 export interface AdminUser {
   id: string
@@ -103,7 +103,9 @@ export interface TravelOrder {
   paymentMethod: string
   totalAmount: number
   totalQuantity: number
+  verificationCode: string
   paidAt?: string | null
+  verifiedAt?: string | null
   createdAt: string
   updatedAt: string
   user: TravelOrderUser

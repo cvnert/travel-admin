@@ -2,6 +2,7 @@ import {
   AppstoreOutlined,
   LogoutOutlined,
   PlusOutlined,
+  SafetyCertificateOutlined,
   SendOutlined,
 } from '@ant-design/icons'
 import {
@@ -67,6 +68,8 @@ import {
   updateProductStatus,
   uploadImageUrl,
 } from './api'
+import VerificationPage from './VerificationPage'
+import { getOrderStatusMeta } from './orderStatus'
 
 const { Header, Sider, Content } = Layout
 
@@ -107,6 +110,8 @@ function AdminLayout() {
               ? 'banners'
               : location.pathname.startsWith('/orders')
                 ? 'orders'
+                : location.pathname.startsWith('/verifications')
+                  ? 'verifications'
                 : 'products',
           ]}
           items={[
@@ -119,6 +124,11 @@ function AdminLayout() {
               key: 'orders',
               icon: <AppstoreOutlined />,
               label: <Link to="/orders">订单查询</Link>,
+            },
+            {
+              key: 'verifications',
+              icon: <SafetyCertificateOutlined />,
+              label: <Link to="/verifications">核销管理</Link>,
             },
             {
               key: 'products',
@@ -319,6 +329,11 @@ function ProductsPage() {
               width: 120,
               render: (value: number) => `¥${value.toFixed(2)}`,
             },
+            {
+              title: '销量',
+              dataIndex: 'salesCount',
+              width: 100,
+            },
             { title: '标签', dataIndex: 'tag', width: 120, render: (value: string) => value || '-' },
             { title: '排序', dataIndex: 'sortOrder', width: 90 },
             {
@@ -507,7 +522,7 @@ function OrdersPage() {
               title: '状态',
               dataIndex: 'status',
               width: 120,
-              render: (value: OrderStatus) => <StatusTag status={value} />,
+              render: (value: OrderStatus) => <OrderStatusTag status={value} />,
             },
             {
               title: '支付方式',
@@ -887,15 +902,23 @@ function ProductFormPage() {
   )
 }
 
+function OrderStatusTag({ status }: { status: OrderStatus }) {
+  const item = getOrderStatusMeta(status)
+  return <Tag color={item.color}>{item.text}</Tag>
+}
+
 function StatusTag({ status }: { status: ProductStatus | BannerStatus | OrderStatus }) {
+  if (status === 'pending_payment' || status === 'pending_travel' || status === 'completed' || status === 'paid') {
+    const item = getOrderStatusMeta(status)
+    return <Tag color={item.color}>{item.text}</Tag>
+  }
+
   const map = {
     draft: { color: 'default', text: '草稿' },
     published: { color: 'success', text: '上架' },
     offline: { color: 'warning', text: '下架' },
-    pending_payment: { color: 'processing', text: '待付款' },
-    paid: { color: 'success', text: '已支付' },
   } as const
-  const item = map[status] || map.draft
+  const item = map[status as keyof typeof map] || map.draft
   return <Tag color={item.color}>{item.text}</Tag>
 }
 
@@ -1068,6 +1091,7 @@ function App() {
             <Route path="/banners/new" element={<BannerFormPage />} />
             <Route path="/banners/:id/edit" element={<BannerFormPage />} />
             <Route path="/orders" element={<OrdersPage />} />
+            <Route path="/verifications" element={<VerificationPage />} />
             <Route path="/products" element={<ProductsPage />} />
             <Route path="/products/new" element={<ProductFormPage />} />
             <Route path="/products/:id/edit" element={<ProductFormPage />} />
@@ -1080,3 +1104,4 @@ function App() {
 }
 
 export default App
+

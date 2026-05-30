@@ -120,6 +120,12 @@ export async function getOrder(id: string) {
   return data.order as TravelOrder
 }
 
+export async function verifyOrder(id: string, verificationCode?: string) {
+  const payload = verificationCode ? { verificationCode } : {}
+  const { data } = await api.post(`/api/admin/orders/${id}/verify`, payload)
+  return data.order as TravelOrder
+}
+
 export async function signImageUrls(keys: string[]) {
   const uniqueKeys = Array.from(new Set(keys.filter(Boolean)))
   if (uniqueKeys.length === 0) return {}
