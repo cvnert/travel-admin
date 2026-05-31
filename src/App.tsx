@@ -330,6 +330,12 @@ function ProductsPage() {
               render: (value: number) => `¥${value.toFixed(2)}`,
             },
             {
+              title: '节假日价',
+              dataIndex: 'holidayPrice',
+              width: 120,
+              render: (value: number) => `¥${value.toFixed(2)}`,
+            },
+            {
               title: '销量',
               dataIndex: 'salesCount',
               width: 100,
@@ -772,6 +778,9 @@ function ProductFormPage() {
         bannerImages: [],
         detailImages: [],
         price: 0,
+        weekdayPrice: 0,
+        weekendPrice: 0,
+        holidayPrice: 0,
         salesCount: 0,
         sortOrder: 0,
         status: 'draft',
@@ -794,6 +803,9 @@ function ProductFormPage() {
         bannerImages: values.bannerImages || [],
         detailImages: values.detailImages || [],
         price: Number(values.price || 0),
+        weekdayPrice: Number(values.weekdayPrice || 0),
+        weekendPrice: Number(values.weekendPrice || 0),
+        holidayPrice: Number(values.holidayPrice || 0),
         salesCount: Number(values.salesCount || 0),
         sortOrder: Number(values.sortOrder || 0),
       }
@@ -844,6 +856,15 @@ function ProductFormPage() {
 
             <Space size={16} align="start" wrap>
               <Form.Item label="价格" name="price" rules={[{ required: true, message: '请输入价格' }]}>
+                <InputNumber min={0} precision={2} prefix="¥" style={{ width: 180 }} />
+              </Form.Item>
+              <Form.Item label="工作日价" name="weekdayPrice" rules={[{ required: true, message: '请输入工作日价' }]}>
+                <InputNumber min={0} precision={2} prefix="¥" style={{ width: 180 }} />
+              </Form.Item>
+              <Form.Item label="周末价" name="weekendPrice" rules={[{ required: true, message: '请输入周末价' }]}>
+                <InputNumber min={0} precision={2} prefix="¥" style={{ width: 180 }} />
+              </Form.Item>
+              <Form.Item label="节假日价" name="holidayPrice" rules={[{ required: true, message: '请输入节假日价' }]}>
                 <InputNumber min={0} precision={2} prefix="¥" style={{ width: 180 }} />
               </Form.Item>
               <Form.Item label="销量" name="salesCount" rules={[{ required: true, message: '请输入销量' }]}>

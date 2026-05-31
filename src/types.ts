@@ -18,6 +18,9 @@ export interface TravelProduct {
   detailImageUrls: string[]
   shortDescription: string
   price: number
+  weekdayPrice: number
+  weekendPrice: number
+  holidayPrice: number
   salesCount: number
   tag: string
   summary: string
@@ -39,6 +42,9 @@ export interface ProductPayload {
   detailImages: string[]
   shortDescription: string
   price: number
+  weekdayPrice: number
+  weekendPrice: number
+  holidayPrice: number
   salesCount: number
   tag: string
   summary: string
