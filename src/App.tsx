@@ -324,7 +324,7 @@ function ProductsPage() {
               ),
             },
             {
-              title: '价格',
+              title: '默认价格',
               dataIndex: 'price',
               width: 120,
               render: (value: number) => `¥${value.toFixed(2)}`,
@@ -855,7 +855,7 @@ function ProductFormPage() {
             </Form.Item>
 
             <Space size={16} align="start" wrap>
-              <Form.Item label="价格" name="price" rules={[{ required: true, message: '请输入价格' }]}>
+              <Form.Item label="默认价格" name="price" rules={[{ required: true, message: '请输入默认价格' }]}>
                 <InputNumber min={0} precision={2} prefix="¥" style={{ width: 180 }} />
               </Form.Item>
               <Form.Item label="工作日价" name="weekdayPrice" rules={[{ required: true, message: '请输入工作日价' }]}>
