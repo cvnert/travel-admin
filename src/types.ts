@@ -98,6 +98,17 @@ export interface TravelOrderItem {
   unitPrice: number
   quantity: number
   subtotalAmount: number
+  travelers?: TravelOrderTraveler[]
+}
+
+export interface TravelOrderTraveler {
+  id: string
+  orderId: string
+  orderItemId: string
+  name: string
+  phone: string
+  gender: 'male' | 'female'
+  idCard: string
 }
 
 export interface TravelOrder {

@@ -459,6 +459,12 @@ function OrdersPage() {
                 size="small"
                 pagination={false}
                 dataSource={record.items}
+                expandable={{
+                  expandedRowRender: (item) => (
+                    <TravelerList travelers={item.travelers || []} />
+                  ),
+                  rowExpandable: (item) => Boolean(item.travelers && item.travelers.length > 0),
+                }}
                 columns={[
                   {
                     title: '商品',
@@ -468,6 +474,12 @@ function OrdersPage() {
                     title: '数量',
                     dataIndex: 'quantity',
                     width: 80,
+                  },
+                  {
+                    title: '出行人',
+                    dataIndex: 'travelers',
+                    width: 100,
+                    render: (travelers: TravelOrder['items'][number]['travelers']) => `${travelers?.length || 0} 人`,
                   },
                   {
                     title: '单价',
@@ -928,6 +940,32 @@ function OrderStatusTag({ status }: { status: OrderStatus }) {
   return <Tag color={item.color}>{item.text}</Tag>
 }
 
+function TravelerList({ travelers }: { travelers: NonNullable<TravelOrder['items'][number]['travelers']> }) {
+  if (travelers.length === 0) {
+    return <Typography.Text type="secondary">暂无出行人信息</Typography.Text>
+  }
+
+  return (
+    <Table
+      rowKey="id"
+      size="small"
+      pagination={false}
+      dataSource={travelers}
+      columns={[
+        { title: '姓名', dataIndex: 'name', width: 140 },
+        {
+          title: '性别',
+          dataIndex: 'gender',
+          width: 90,
+          render: (value: string) => (value === 'female' ? '女' : '男'),
+        },
+        { title: '电话', dataIndex: 'phone', width: 160 },
+        { title: '身份证号', dataIndex: 'idCard', width: 220 },
+      ]}
+    />
+  )
+}
+
 function StatusTag({ status }: { status: ProductStatus | BannerStatus | OrderStatus }) {
   if (status === 'pending_payment' || status === 'pending_travel' || status === 'completed' || status === 'paid') {
     const item = getOrderStatusMeta(status)
@@ -1125,4 +1163,3 @@ function App() {
 }
 
 export default App
-
